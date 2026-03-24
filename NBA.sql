@@ -1,44 +1,57 @@
---Estufiante: Mariana Nieto
+/*_____Ejercicios NBA Parte 3: Operaciones SELECT
+_______multitabla. Uso avanzado.__________________*/
 
---Nivel 1: Composiciones y Cruces de Datos
+-- ____Estudiante: Mariana Nieto
 
-/*INNER JOIN: Obtén un listado de todos los jugadores que incluya su nombre, su
-procedencia y el nombre de la división en la que compite su equipo.*/
 
-SELECT j.NOMBRE,
-       j.PROCEDENCIA,
-       e.DIVISION
+--_______________________________________________ NIVEL 1: JOINS Y CRUCES
+
+/* INNER JOIN:
+   Obtiene un listado de todos los jugadores junto con:
+   - su nombre
+   - su procedencia
+   - la división del equipo al que pertenecen
+   Solo aparecen jugadores que tienen equipo asociado */
+   
+SELECT j.NOMBRE,          -- Nombre del jugador
+       j.PROCEDENCIA,    -- Lugar de procedencia
+       e.DIVISION        -- División del equipo
 FROM JUGADORES j
 INNER JOIN EQUIPOS e
-    ON j.NOMBRE_EQUIPO = e.NOMBRE;
+    ON j.NOMBRE_EQUIPO = e.NOMBRE;  -- Relación entre jugador y su equipo
     
-/*LEFT OUTER JOIN: Muestra el nombre de todos los jugadores de la liga y los puntos
-por partido que promediaron en la temporada '04/05'. Es obligatorio que aparezcan
-todos los jugadores de la tabla, incluso si no tienen estadísticas en esa temporada
-(en ese caso, los puntos aparecerán como NULL).*/
 
-SELECT j.NOMBRE,
-       e.PUNTOS_POR_PARTIDO
+/* LEFT OUTER JOIN:
+   Muestra TODOS los jugadores, aunque no tengan estadísticas.
+   Si no jugaron en la temporada '04/05', los puntos serán NULL */
+   
+SELECT j.NOMBRE,                -- Nombre del jugador
+       e.PUNTOS_POR_PARTIDO    -- Promedio de puntos
 FROM JUGADORES j
 LEFT OUTER JOIN ESTADISTICAS e
-    ON j.CODIGO = e.JUGADOR
-    AND e.TEMPORADA = '04/05';
+    ON j.CODIGO = e.JUGADOR           -- Relación jugador-estadísticas
+    AND e.TEMPORADA = '04/05';        -- Filtro de temporada dentro del JOIN
     
-/*RIGHT OUTER JOIN: Necesitamos un listado de todos los equipos y las ciudades
-registradas. Asegúrate de mostrar todos los equipos de la tabla EQUIPOS, incluso si
-actualmente no tienen jugadores asignados en la tabla JUGADORES.*/
 
-SELECT e.NOMBRE,
-       e.CIUDAD
+/* RIGHT OUTER JOIN:
+   Muestra TODOS los equipos, incluso si no tienen jugadores.
+   Se usa RIGHT JOIN porque la tabla principal es EQUIPOS */
+   
+SELECT e.NOMBRE,    -- Nombre del equipo
+       e.CIUDAD     -- Ciudad del equipo
 FROM JUGADORES j
 RIGHT OUTER JOIN EQUIPOS e
-    ON j.NOMBRE_EQUIPO = e.NOMBRE;
+    ON j.NOMBRE_EQUIPO = e.NOMBRE;  -- Relación con jugadores
     
-/*CROSS JOIN: Por motivos de marketing, la liga quiere combinar cada nombre de
-equipo con cada una de las conferencias existentes ('East' y 'West'). Genera este
-producto cartesiano.*/
 
-SELECT e.NOMBRE AS EQUIPO, c.CONFERENCIA AS EQUIPO
+/* CROSS JOIN:
+   Genera todas las combinaciones posibles entre:
+   - equipos
+   - conferencias ('East' y 'West')
+   Esto es un producto cartesiano */
+   
+SELECT e.NOMBRE AS EQUIPO,       -- Nombre del equipo
+       c.CONFERENCIA AS CONFERENCIA  -- Conferencia asignada
 FROM EQUIPOS e
 CROSS JOIN (
     SELECT 'East' AS CONFERENCIA FROM DUAL
@@ -46,44 +59,92 @@ CROSS JOIN (
     SELECT 'West' FROM DUAL
 ) c;
 
-/*FULL OUTER JOIN: Realiza una auditoría total de la relación entre jugadores y
-equipos. El resultado debe mostrar cualquier jugador sin equipo asignado y
-cualquier equipo que no tenga jugadores, asegurando que no se pierda ninguna fila
-de ninguna de las dos tablas.*/
 
-SELECT j.NOMBRE AS JUGADOR, e.NOMBRE AS EQUIPO
+/* FULL OUTER JOIN:
+   Muestra TODOS los jugadores y TODOS los equipos:
+   - Jugadores sin equipo
+   - Equipos sin jugadores
+   No se pierde información de ninguna tabla */
+   
+SELECT j.NOMBRE AS JUGADOR,  -- Nombre del jugador
+       e.NOMBRE AS EQUIPO    -- Nombre del equipo
 FROM JUGADORES j
 FULL OUTER JOIN EQUIPOS e
 ON j.NOMBRE_EQUIPO = e.NOMBRE;
 
-//Nivel 2: Lógica Avanzada y Subconsultas
 
-/*FILTRADO DE NULOS: Utilizando un LEFT JOIN, identifica el nombre de aquellos
-equipos que actualmente no tienen ningún jugador registrado en la base de datos.*/
+-- 
+--_________________________________________NIVEL 2: LÓGICA AVANZADA
+-- 
 
+/* FILTRADO DE NULOS:
+   Encuentra equipos que NO tienen jugadores asociados.
+   Se detecta cuando el JOIN no encuentra coincidencia (NULL) */
+   
 SELECT e.NOMBRE AS EQUIPO_SIN_JUGADORES
 FROM EQUIPOS e
 LEFT JOIN JUGADORES j
 ON e.NOMBRE = j.NOMBRE_EQUIPO
-WHERE j.NOMBRE_EQUIPO IS NULL;
+WHERE j.NOMBRE_EQUIPO IS NULL;  -- Indica que no hay jugadores
 
-/*AUTOCONEXIÓN (SELF-JOIN) SIMULADO: Muestra los resultados de los partidos de
-la temporada '07/08'. La consulta debe devolver cuatro columnas: EQUIPO_LOCAL,
-PUNTOS_LOCAL, PUNTOS_VISITANTE y EQUIPO_VISITANTE*/
 
-SELECT el.NOMBRE AS EQUIPO_LOCAL, 
-       p.PUNTOS_LOCAL, 
-       p.PUNTOS_VISITANTE, 
-       ev.NOMBRE AS EQUIPO_VISITANTE
+/* SELF-JOIN (simulado con dos alias):
+   Muestra partidos con:
+   - equipo local
+   - puntos local
+   - puntos visitante
+   - equipo visitante */
+   
+SELECT el.NOMBRE AS EQUIPO_LOCAL,     -- Equipo que juega en casa
+       p.PUNTOS_LOCAL,               -- Puntos del equipo local
+       p.PUNTOS_VISITANTE,           -- Puntos del visitante
+       ev.NOMBRE AS EQUIPO_VISITANTE -- Equipo visitante
 FROM PARTIDOS p
-JOIN EQUIPOS el ON p.EQUIPO_LOCAL = el.NOMBRE
-JOIN EQUIPOS ev ON p.EQUIPO_VISITANTE = ev.NOMBRE
-WHERE p.TEMPORADA = '07/08';
-
-/*SUBCONSULTA CON "IN": Selecciona el nombre de los jugadores que pertenecen a
-equipos de la división 'Pacific' o 'Atlantic'. Debes resolverlo utilizando una
-subconsulta sobre la tabla EQUIPOS.*/
+JOIN EQUIPOS el ON p.EQUIPO_LOCAL = el.NOMBRE   -- Relación equipo local
+JOIN EQUIPOS ev ON p.EQUIPO_VISITANTE = ev.NOMBRE -- Relación equipo visitante
+WHERE p.TEMPORADA = '07/08';  -- Filtro por temporada
 
 
+/* SUBCONSULTA CON IN:
+   Selecciona jugadores cuyos equipos pertenecen a:
+   - división Pacific
+   - división Atlantic */
+   
+SELECT NOMBRE
+FROM JUGADORES
+WHERE NOMBRE_EQUIPO IN (
+    SELECT NOMBRE
+    FROM EQUIPOS
+    WHERE DIVISION IN ('Pacific', 'Atlantic')  -- Filtro de divisiones
+);
 
 
+/* OPERADOR ALL:
+   Obtiene jugadores más altos que TODOS los jugadores
+   de 'Dallas Mavericks' */
+   
+SELECT NOMBRE, ALTURA
+FROM JUGADORES
+WHERE ALTURA > ALL (
+    SELECT ALTURA
+    FROM JUGADORES
+    WHERE NOMBRE_EQUIPO = 'Dallas Mavericks'
+);
+
+
+/* SUBCONSULTA CORRELACIONADA:
+   Muestra jugadores que:
+   - están en la temporada '04/05'
+   - tienen más puntos que la media de su propio equipo */
+   
+SELECT j.NOMBRE, s.PUNTOS_POR_PARTIDO
+FROM JUGADORES j
+JOIN ESTADISTICAS s ON j.CODIGO = s.JUGADOR
+WHERE s.TEMPORADA = '04/05'
+  AND s.PUNTOS_POR_PARTIDO > (
+      SELECT AVG(s2.PUNTOS_POR_PARTIDO)  -- Media del equipo
+      FROM ESTADISTICAS s2
+      JOIN JUGADORES j2 ON s2.JUGADOR = j2.CODIGO
+      WHERE s2.TEMPORADA = '04/05'
+        AND j2.NOMBRE_EQUIPO = j.NOMBRE_EQUIPO  -- Comparación con su equipo
+  );
